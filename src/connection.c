@@ -67,6 +67,9 @@ int connTypeInitialize(void) {
     /* may fail if without BUILD_TLS=yes */
     RedisRegisterConnectionTypeTLS();
 
+    /* may fail if Homa kernel module is not loaded */
+    RedisRegisterConnectionTypeHoma();
+
     return C_OK;
 }
 
@@ -124,6 +127,21 @@ ConnectionType *connectionTypeUnix(void) {
 
     ct_unix = connectionByType(CONN_TYPE_UNIX);
     return ct_unix;
+}
+
+/* Cache Homa connection type, query it by string once */
+ConnectionType *connectionTypeHoma(void) {
+    static ConnectionType *ct_homa = NULL;
+    static int cached = 0;
+
+    /* Unlike the TCP and Unix connections, the Homa one can be missing
+     * So we need the cached pointer to handle NULL correctly too. */
+    if (!cached) {
+        cached = 1;
+        ct_homa = connectionByType(CONN_TYPE_HOMA);
+    }
+
+    return ct_homa;
 }
 
 int connectionIndexByType(const char *typename) {

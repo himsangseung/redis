@@ -40,6 +40,7 @@ typedef enum {
 #define CONN_TYPE_SOCKET            "tcp"
 #define CONN_TYPE_UNIX              "unix"
 #define CONN_TYPE_TLS               "tls"
+#define CONN_TYPE_HOMA              "homa"
 #define CONN_TYPE_MAX               8           /* 8 is enough to be extendable */
 
 typedef void (*ConnectionCallbackFunc)(struct connection *conn);
@@ -403,6 +404,9 @@ ConnectionType *connectionTypeTls(void);
 /* Fast path to get Unix connection type */
 ConnectionType *connectionTypeUnix(void);
 
+/* Fast path to get Homa connection type */
+ConnectionType *connectionTypeHoma(void);
+
 /* Lookup the index of a connection type by type name, return -1 if not found */
 int connectionIndexByType(const char *typename);
 
@@ -451,10 +455,15 @@ sds getListensInfoString(sds info);
 int RedisRegisterConnectionTypeSocket(void);
 int RedisRegisterConnectionTypeUnix(void);
 int RedisRegisterConnectionTypeTLS(void);
+int RedisRegisterConnectionTypeHoma(void);
 
 /* Return 1 if connection is using TLS protocol, 0 if otherwise. */
 static inline int connIsTLS(connection *conn) {
     return conn && conn->type == connectionTypeTls();
+}
+
+static inline int connIsHoma(connection *conn) {
+    return conn && conn->type == connectionTypeHoma();
 }
 
 #endif  /* __REDIS_CONNECTION_H */

@@ -2932,6 +2932,20 @@ void initListeners(void) {
         listener->port = server.tls_port;
         listener->ct = connectionByType(CONN_TYPE_TLS);
     }
+    
+    if (server.homa_port != 0) {
+        conn_index = connectionIndexByType(CONN_TYPE_HOMA);
+        if (conn_index < 0) {
+            serverLog(LL_WARNING, "Failed finding connection listener of %s", CONN_TYPE_HOMA);
+            serverPanic("Failed finding connection listener of %s", CONN_TYPE_HOMA);
+        }
+        listener = &server.listeners[conn_index];
+        listener->bindaddr = server.bindaddr;
+        listener->bindaddr_count = server.bindaddr_count;
+        listener->port = server.homa_port;
+        listener->ct = connectionByType(CONN_TYPE_HOMA);
+        serverLog(LL_NOTICE, "Homa listener configured on port %d", listener->port);
+    }
     if (server.unixsocket != NULL) {
         conn_index = connectionIndexByType(CONN_TYPE_UNIX);
         if (conn_index < 0)
@@ -2947,8 +2961,10 @@ void initListeners(void) {
     int listen_fds = 0;
     for (int j = 0; j < CONN_TYPE_MAX; j++) {
         listener = &server.listeners[j];
-        if (listener->ct == NULL)
+        if (listener->ct == NULL) {
+            serverLog(LL_VERBOSE, "Listener %d has no connection type", j);
             continue;
+        }
 
         if (connListen(listener) == C_ERR) {
             serverLog(LL_WARNING, "Failed listening on port %u (%s), aborting.", listener->port, listener->ct->get_type(NULL));
