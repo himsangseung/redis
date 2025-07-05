@@ -68,7 +68,9 @@ int connTypeInitialize(void) {
     RedisRegisterConnectionTypeTLS();
 
     /* may fail if Homa kernel module is not loaded */
+#ifdef HOMA_ENABLED
     RedisRegisterConnectionTypeHoma();
+#endif
 
     return C_OK;
 }
@@ -130,6 +132,7 @@ ConnectionType *connectionTypeUnix(void) {
 }
 
 /* Cache Homa connection type, query it by string once */
+#ifdef HOMA_ENABLED
 ConnectionType *connectionTypeHoma(void) {
     static ConnectionType *ct_homa = NULL;
     static int cached = 0;
@@ -143,6 +146,11 @@ ConnectionType *connectionTypeHoma(void) {
 
     return ct_homa;
 }
+#else
+ConnectionType *connectionTypeHoma(void) {
+    return NULL;
+}
+#endif
 
 int connectionIndexByType(const char *typename) {
     ConnectionType *ct;

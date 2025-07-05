@@ -2454,7 +2454,39 @@ static int updateHZ(const char **err) {
     return 1;
 }
 
+static int validateTransportConfig(const char **err) {
+#ifdef HOMA_ENABLED
+    /* When HOMA_ENABLED is set, prefer Homa transport over TCP */
+    int tcp_enabled = (server.port != 0);
+    int homa_enabled = (server.homa_port != 0);
+    
+    if (homa_enabled) {
+        /* Homa is configured, so disable TCP port to avoid conflicts */
+        if (tcp_enabled) {
+            serverLog(LL_NOTICE, "HOMA_ENABLED: Disabling TCP port %d (using Homa port %d)", 
+                     server.port, server.homa_port);
+            server.port = 0;  /* Disable TCP port */
+        }
+    } else if (!tcp_enabled) {
+        *err = "No transport configured. Set either 'port' (for TCP) or 'homa-port' (for Homa).";
+        return 0;
+    }
+#else
+    /* Standard Redis build - only TCP is available */
+    if (server.port == 0) {
+        *err = "No TCP port configured. Set 'port' for standard Redis.";
+        return 0;
+    }
+#endif
+    return 1;
+}
+
 static int updatePort(const char **err) {
+    /* Validate transport configuration first */
+    if (!validateTransportConfig(err)) {
+        return 0;
+    }
+    
     connListener *listener = listenerByType(CONN_TYPE_SOCKET);
 
     serverAssert(listener != NULL);
@@ -3255,7 +3287,9 @@ standardConfig static_configs[] = {
     createOffTConfig("loading-process-events-interval-bytes", NULL, MODIFIABLE_CONFIG | HIDDEN_CONFIG, 1024, INT_MAX, server.loading_process_events_interval_bytes, 1024*512, INTEGER_CONFIG, NULL, NULL),
 
     createIntConfig("tls-port", NULL, MODIFIABLE_CONFIG, 0, 65535, server.tls_port, 0, INTEGER_CONFIG, NULL, applyTLSPort),
+#ifdef HOMA_ENABLED
     createIntConfig("homa-port", NULL, MODIFIABLE_CONFIG, 0, 65535, server.homa_port, 0, INTEGER_CONFIG, NULL, updatePort), /* Homa port. */
+#endif
     createIntConfig("tls-session-cache-size", NULL, MODIFIABLE_CONFIG, 0, INT_MAX, server.tls_ctx_config.session_cache_size, 20*1024, INTEGER_CONFIG, NULL, applyTlsCfg),
     createIntConfig("tls-session-cache-timeout", NULL, MODIFIABLE_CONFIG, 0, INT_MAX, server.tls_ctx_config.session_cache_timeout, 300, INTEGER_CONFIG, NULL, applyTlsCfg),
     createBoolConfig("tls-cluster", NULL, MODIFIABLE_CONFIG, server.tls_cluster, 0, NULL, applyTlsCfg),

@@ -2908,6 +2908,11 @@ void initListeners(void) {
         listener->bindaddr_count = server.bindaddr_count;
         listener->port = server.port;
         listener->ct = connectionByType(CONN_TYPE_SOCKET);
+#ifndef HOMA_ENABLED
+        serverLog(LL_NOTICE, "Using TCP transport on port %d", listener->port);
+#else
+        serverLog(LL_NOTICE, "TCP transport configured on port %d (disabled by HOMA_ENABLED)", listener->port);
+#endif
     }
 
     if (server.tls_port || server.tls_replication || server.tls_cluster) {
@@ -2933,6 +2938,7 @@ void initListeners(void) {
         listener->ct = connectionByType(CONN_TYPE_TLS);
     }
     
+#ifdef HOMA_ENABLED
     if (server.homa_port != 0) {
         conn_index = connectionIndexByType(CONN_TYPE_HOMA);
         if (conn_index < 0) {
@@ -2944,8 +2950,9 @@ void initListeners(void) {
         listener->bindaddr_count = server.bindaddr_count;
         listener->port = server.homa_port;
         listener->ct = connectionByType(CONN_TYPE_HOMA);
-        serverLog(LL_NOTICE, "Homa listener configured on port %d", listener->port);
+        serverLog(LL_NOTICE, "HOMA_ENABLED: Using Homa transport on port %d", listener->port);
     }
+#endif
     if (server.unixsocket != NULL) {
         conn_index = connectionIndexByType(CONN_TYPE_UNIX);
         if (conn_index < 0)
@@ -6639,7 +6646,12 @@ void redisAsciiArt(void) {
     if (!show_logo) {
         serverLog(LL_NOTICE,
             "Running mode=%s, port=%d.",
-            mode, server.port ? server.port : server.tls_port
+            mode, 
+#ifdef HOMA_ENABLED
+            server.homa_port ? server.homa_port : (server.port ? server.port : server.tls_port)
+#else
+            server.port ? server.port : server.tls_port
+#endif
         );
     } else {
         snprintf(buf,1024*16,ascii_logo,
@@ -6647,7 +6659,12 @@ void redisAsciiArt(void) {
             redisGitSHA1(),
             strtol(redisGitDirty(),NULL,10) > 0,
             (sizeof(long) == 8) ? "64" : "32",
-            mode, server.port ? server.port : server.tls_port,
+            mode, 
+#ifdef HOMA_ENABLED
+            server.homa_port ? server.homa_port : (server.port ? server.port : server.tls_port),
+#else
+            server.port ? server.port : server.tls_port,
+#endif
             (long) getpid()
         );
         serverLogRaw(LL_NOTICE|LL_RAW,buf);
