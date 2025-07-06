@@ -1750,9 +1750,7 @@ struct redisServer {
     /* Networking */
     int port;                   /* TCP listening port */
     int tls_port;               /* TLS listening port */
-#ifdef HOMA_ENABLED
     int homa_port;              /* Homa listening port */
-#endif
     int tcp_backlog;            /* TCP listen() backlog */
     char *bindaddr[CONFIG_BINDADDR_MAX]; /* Addresses we should bind to */
     int bindaddr_count;         /* Number of addresses in server.bindaddr[] */

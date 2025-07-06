@@ -405,9 +405,7 @@ ConnectionType *connectionTypeTls(void);
 ConnectionType *connectionTypeUnix(void);
 
 /* Fast path to get Homa connection type */
-#ifdef HOMA_ENABLED
 ConnectionType *connectionTypeHoma(void);
-#endif
 
 /* Lookup the index of a connection type by type name, return -1 if not found */
 int connectionIndexByType(const char *typename);
@@ -457,23 +455,15 @@ sds getListensInfoString(sds info);
 int RedisRegisterConnectionTypeSocket(void);
 int RedisRegisterConnectionTypeUnix(void);
 int RedisRegisterConnectionTypeTLS(void);
-#ifdef HOMA_ENABLED
 int RedisRegisterConnectionTypeHoma(void);
-#endif
 
 /* Return 1 if connection is using TLS protocol, 0 if otherwise. */
 static inline int connIsTLS(connection *conn) {
     return conn && conn->type == connectionTypeTls();
 }
 
-#ifdef HOMA_ENABLED
 static inline int connIsHoma(connection *conn) {
     return conn && conn->type == connectionTypeHoma();
 }
-#else
-static inline int connIsHoma(connection *conn) {
-    return 0;
-}
-#endif
 
 #endif  /* __REDIS_CONNECTION_H */
